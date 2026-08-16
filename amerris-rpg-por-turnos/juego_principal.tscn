@@ -1,0 +1,58 @@
+[gd_scene format=3 uid="uid://cxsutift7llf7"]
+
+[ext_resource type="Script" uid="uid://cuj2108vsj4tf" path="res://juego_principal.gd" id="1_02pbp"]
+
+[node name="JuegoPrincipal" type="Node2D" unique_id=79044625]
+script = ExtResource("1_02pbp")
+
+[node name="RichTextLabel" type="RichTextLabel" parent="." unique_id=46661676]
+offset_left = -2.0
+offset_top = 5.0
+offset_right = 1159.0
+offset_bottom = 660.0
+theme_override_font_sizes/normal_font_size = 20
+theme_override_font_sizes/bold_font_size = 20
+theme_override_font_sizes/bold_italics_font_size = 20
+theme_override_font_sizes/italics_font_size = 20
+theme_override_font_sizes/mono_font_size = 20
+scroll_following = true
+scroll_following_visible_characters = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=898994333]
+offset_left = 302.0
+offset_top = 360.0
+offset_right = 982.0
+offset_bottom = 643.0
+
+[node name="BotonAtacar" type="Button" parent="HBoxContainer" unique_id=2111233461]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "Atacar"
+
+[node name="BotonObjeto" type="Button" parent="HBoxContainer" unique_id=916403952]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "Usar Objeto"
+
+[node name="BotonSiguiente" type="Button" parent="HBoxContainer" unique_id=142380542]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "Avanzar Evento"
+
+[node name="LabelJugador" type="Label" parent="." unique_id=1878020121]
+offset_left = 433.0
+offset_top = 5.0
+offset_right = 782.0
+offset_bottom = 55.0
+theme_override_font_sizes/font_size = 36
+text = "Jugador HP: 100/100"
+
+[node name="LabelEnemigo" type="Label" parent="." unique_id=1215517914]
+offset_left = 819.0
+offset_top = 3.0
+offset_right = 1143.0
+offset_bottom = 53.0
+theme_override_font_sizes/font_size = 36
+text = "Enemigo HP: 50/50"
+
+[connection signal="pressed" from="HBoxContainer/BotonObjeto" to="." method="_on_boton_objeto_pressed"]

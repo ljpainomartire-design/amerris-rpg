@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://cpjun4j6w1ml6"]
+
+[ext_resource type="Script" uid="uid://x1itm3urjk2f" path="res://ItemData.gd" id="1_vrgum"]
+
+[resource]
+script = ExtResource("1_vrgum")
+nombre = "Pocion de vida"
+curacion = 30
+metadata/_custom_type_script = "uid://x1itm3urjk2f"
