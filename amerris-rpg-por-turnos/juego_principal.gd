@@ -225,3 +225,62 @@ func cargar_historial() -> Array:
 		if json.parse(texto) == OK:
 			return json.get_data()
 	return []
+
+
+func _on_boton_historial_pressed():
+	$PanelHistorial.visible = true
+	mostrar_metricas_historial()
+
+func _on_boton_cerrar_historial_pressed():
+	$PanelHistorial.visible = false
+
+func mostrar_metricas_historial():
+	var historial = cargar_historial()
+	
+	if historial.size() == 0:
+		$PanelHistorial/TextoHistorial.text = "[center]⚠️ No hay registros guardados todavía. ¡Completá tu primer día en el Check-in![/center]"
+		return
+		
+	# 1. Cálculo de métricas
+	var total_dias = historial.size()
+	var racha_gimnasio = 0
+	
+	# Contar racha de gimnasio de los últimos días
+	for i in range(historial.size() - 1, -1, -1):
+		if historial[i].get("gimnasio", false):
+			racha_gimnasio += 1
+		else:
+			break # Se corta la racha si un día no se hizo
+			
+	# Diferencia de peso (Primer registro vs ÚLTIMO registro)
+	var primer_peso = float(historial[0].get("peso", "0"))
+	var ultimo_peso = float(historial[historial.size() - 1].get("peso", "0"))
+	var diff_peso = ultimo_peso - primer_peso
+	var texto_peso = str(ultimo_peso) + " kg"
+	
+	if diff_peso != 0 and primer_peso > 0:
+		var signo = "+" if diff_peso > 0 else ""
+		texto_peso += " (" + signo + str(snapped(diff_peso, 0.1)) + " kg)"
+
+	# 2. Armar el reporte visual con formato BBCode
+	var reporte = "[b]📊 DASHBOARD DE PROGRESO[/b]\n"
+	reporte += "---------------------------------------------------------\n"
+	reporte += "📅 Días Registrados: " + str(total_dias) + " | 🔥 Racha Gimnasio: " + str(racha_gimnasio) + " días\n"
+	reporte += "⚖️ Peso Actual: " + texto_peso + "\n"
+	reporte += "---------------------------------------------------------\n"
+	reporte += "[b]📜 ÚLTIMOS REGISTROS:[/b]\n\n"
+	
+	# Recorrer historial (del más reciente al más antiguo)
+	var limite = max(0, historial.size() - 5) # Mostrar últimos 5 días
+	for i in range(historial.size() - 1, limite - 1, -1):
+		var reg = historial[i]
+		var fecha = reg.get("fecha", "Sin fecha")
+		var pasos = reg.get("pasos", 0)
+		var gym = "🏋️" if reg.get("gimnasio", false) else "❌"
+		var estudio = "📚" if reg.get("estudio", false) else "❌"
+		var nutricion = "🥗" if reg.get("nutricion", false) else "❌"
+		
+		reporte += "• " + fecha + " | " + str(reg.get("peso", "-")) + "kg | " + str(pasos) + " pasos | Gym:" + gym + " Est:" + estudio + " Nut:" + nutricion + "\n"
+
+	$PanelHistorial/TextoHistorial.bbcode_enabled = true
+	$PanelHistorial/TextoHistorial.text = reporte

@@ -21,8 +21,9 @@ scroll_following_visible_characters = true
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=898994333]
 offset_left = 302.0
 offset_top = 360.0
-offset_right = 982.0
+offset_right = 1035.0
 offset_bottom = 643.0
+theme_override_constants/separation = 15
 
 [node name="BotonAtacar" type="Button" parent="HBoxContainer" unique_id=2111233461]
 layout_mode = 2
@@ -38,6 +39,10 @@ text = "Usar Objeto"
 layout_mode = 2
 theme_override_font_sizes/font_size = 36
 text = "Avanzar Evento"
+
+[node name="BotonHistorial" type="Button" parent="HBoxContainer" unique_id=2010302798]
+layout_mode = 2
+text = "Historial"
 
 [node name="LabelJugador" type="Label" parent="." unique_id=1878020121]
 offset_left = 684.0
@@ -89,5 +94,30 @@ placeholder_text = "¿Cuánto caminaste hoy? (ej: 5000)"
 layout_mode = 2
 text = "Comenzar Jornada"
 
+[node name="PanelHistorial" type="Panel" parent="." unique_id=1490030908]
+visible = false
+offset_left = -2.0
+offset_top = 158.0
+offset_right = 268.0
+offset_bottom = 651.0
+
+[node name="TextoHistorial" type="RichTextLabel" parent="PanelHistorial" unique_id=1167520615]
+layout_mode = 0
+offset_left = 27.0
+offset_top = 83.0
+offset_right = 232.0
+offset_bottom = 393.0
+bbcode_enabled = true
+
+[node name="BotonCerrarHistorial" type="Button" parent="PanelHistorial" unique_id=372605962]
+layout_mode = 0
+offset_left = 1065.0
+offset_top = 437.0
+offset_right = 1123.0
+offset_bottom = 468.0
+text = "Cerrar"
+
 [connection signal="pressed" from="HBoxContainer/BotonObjeto" to="." method="_on_boton_objeto_pressed"]
+[connection signal="pressed" from="HBoxContainer/BotonHistorial" to="." method="_on_boton_historial_pressed"]
 [connection signal="pressed" from="PanelCheckIn/BotonComenzarDia" to="." method="_on_boton_comenzar_dia_pressed"]
+[connection signal="pressed" from="PanelHistorial/BotonCerrarHistorial" to="." method="_on_boton_cerrar_historial_pressed"]
