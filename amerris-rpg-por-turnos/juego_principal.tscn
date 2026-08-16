@@ -19,9 +19,9 @@ scroll_following = true
 scroll_following_visible_characters = true
 
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=898994333]
-offset_left = 302.0
+offset_left = 211.0
 offset_top = 360.0
-offset_right = 1035.0
+offset_right = 1123.0
 offset_bottom = 643.0
 theme_override_constants/separation = 15
 
@@ -44,11 +44,15 @@ text = "Avanzar Evento"
 layout_mode = 2
 text = "Historial"
 
+[node name="BotonStats" type="Button" parent="HBoxContainer" unique_id=785436069]
+layout_mode = 2
+text = "🛡️ Stats"
+
 [node name="LabelJugador" type="Label" parent="." unique_id=1878020121]
-offset_left = 684.0
-offset_top = 11.0
-offset_right = 1033.0
-offset_bottom = 61.0
+offset_left = 574.0
+offset_top = 138.0
+offset_right = 923.0
+offset_bottom = 188.0
 theme_override_font_sizes/font_size = 36
 text = "Jugador HP: 100/100"
 
@@ -61,6 +65,7 @@ theme_override_font_sizes/font_size = 36
 text = "Enemigo HP: 50/50"
 
 [node name="PanelCheckIn" type="VBoxContainer" parent="." unique_id=30503531]
+visible = false
 offset_left = 308.0
 offset_top = 101.0
 offset_right = 911.0
@@ -116,6 +121,41 @@ offset_top = 437.0
 offset_right = 1123.0
 offset_bottom = 468.0
 text = "Cerrar"
+
+[node name="PanelTienda" type="Panel" parent="." unique_id=2073387475]
+offset_left = 310.0
+offset_top = 4.0
+offset_right = 922.0
+offset_bottom = 339.0
+
+[node name="TextoTienda" type="RichTextLabel" parent="PanelTienda" unique_id=1912300639]
+layout_mode = 0
+offset_right = 605.0
+offset_bottom = 120.0
+
+[node name="BotonComprar1" type="Button" parent="PanelTienda" unique_id=65067497]
+layout_mode = 0
+offset_left = 213.0
+offset_top = 187.0
+offset_right = 402.0
+offset_bottom = 330.0
+text = "Poción HP (3 🪙)"
+
+[node name="BotonComprar2" type="Button" parent="PanelTienda" unique_id=999336350]
+layout_mode = 0
+offset_left = 21.0
+offset_top = 184.0
+offset_right = 193.0
+offset_bottom = 334.0
+text = "Mejora de ATQ (6 🪙)"
+
+[node name="BotonComprar3" type="Button" parent="PanelTienda" unique_id=1908375089]
+layout_mode = 0
+offset_left = 416.0
+offset_top = 191.0
+offset_right = 566.0
+offset_bottom = 330.0
+text = "Salir de la Tienda"
 
 [connection signal="pressed" from="HBoxContainer/BotonObjeto" to="." method="_on_boton_objeto_pressed"]
 [connection signal="pressed" from="HBoxContainer/BotonHistorial" to="." method="_on_boton_historial_pressed"]

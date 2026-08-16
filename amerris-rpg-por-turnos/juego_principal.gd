@@ -7,13 +7,13 @@ extends Node2D
 @onready var boton_atacar: Button = $HBoxContainer/BotonAtacar
 @onready var boton_objeto: Button = $HBoxContainer/BotonObjeto
 @onready var boton_siguiente: Button = $HBoxContainer/BotonSiguiente
-@onready var inventario_pocion: ItemData = preload("res://pocion.tres")
 
-# Variables de estado (NUEVO SISTEMA D&D)
+# Variables de estado
 var hp_jugador: int = 20
 var hp_max_jugador: int = 20
-var ataque_base_jugador: int = 1 # Daño fijo base
+var ataque_base_jugador: int = 1
 var puntos_exploracion: int = 0
+var monedas: int = 0
 
 var hp_enemigo: int = 20
 var hp_max_enemigo: int = 20
@@ -22,7 +22,6 @@ var ataque_base_enemigo: int = 1
 var en_combate: bool = false
 
 func _ready():
-	# Conectamos las funciones a los botones
 	boton_atacar.pressed.connect(_on_atacar_pressed)
 	boton_siguiente.pressed.connect(_on_siguiente_pressed)
 	
@@ -32,7 +31,6 @@ func _ready():
 	$LabelEnemigo.visible = false
 	$PanelHistorial.visible = false
 	
-	# Mostramos únicamente el Check-In para ingresar datos
 	$PanelCheckIn.visible = true
 	
 	actualizar_interfaz()
@@ -41,95 +39,129 @@ func _ready():
 
 func agregar_log(mensaje: String):
 	log_texto.append_text(mensaje + "\n")
-	
-	# Si pasa de 12 líneas, limpia el log para que no se acumule tanto
 	if log_texto.get_line_count() > 12:
 		log_texto.clear()
 		log_texto.append_text(mensaje + "\n")
 
 func actualizar_interfaz():
-	label_jugador.text = "HP: " + str(hp_jugador) + "/" + str(hp_max_jugador) + " | PTS: " + str(puntos_exploracion)
+	label_jugador.text = "HP: " + str(hp_jugador) + "/" + str(hp_max_jugador) + " | ATQ: " + str(ataque_base_jugador) + " | 🪙 " + str(monedas) + " | PTS: " + str(puntos_exploracion)
 	if en_combate:
 		label_enemigo.text = "Enemigo HP: " + str(hp_enemigo) + "/" + str(hp_max_enemigo)
 	else:
 		label_enemigo.text = "Enemigo: Ninguno"
 
-# EVENTOS / EXPLORACIÓN
+# === SISTEMA DE EXPLORACIÓN POR DADO D20 ===
 func _on_siguiente_pressed():
 	if en_combate:
 		return
 		
-	# Verificar si quedan puntos de exploración
 	if puntos_exploracion <= 0:
 		agregar_log("⚠️ ¡No te quedan Puntos de Exploración por hoy! Salí a caminar o esperá a mañana.")
 		return
 		
-	# Descontar 1 punto de exploración
 	puntos_exploracion -= 1
-	agregar_log("🗺️ Explorando... (Puntos restantes: " + str(puntos_exploracion) + ")")
-
-	# Generamos un evento aleatorio
-	var dado = randi_range(1, 2)
-	if dado == 1:
+	
+# Tirada de Evento (D20)
+	var dado_d20 = randi_range(1, 20)
+	agregar_log("-----------------------------------------")
+	agregar_log("🎲 Tirada de Exploración (d20): " + str(dado_d20))
+	
+	if dado_d20 == 1:
+		# Pifia: Muy Malo (-2 HP)
+		hp_jugador = max(0, hp_jugador - 2)
+		agregar_log("💀 ¡PIFIA (1)! Caíste en una trampa. Perdiste 2 HP.")
+		
+	elif dado_d20 >= 2 and dado_d20 <= 11:
+		# Malo: Pelea (AHORA DEL 2 AL 11 -> 50% DE PROBABILIDAD DE COMBATE)
+		agregar_log("⚠️ ¡Un enemigo te embosca en el camino!")
 		iniciar_combate()
-	else:
-		evento_curacion()
+		
+	elif dado_d20 >= 12 and dado_d20 <= 16:
+		# Normal: Monedas (del 12 al 16)
+		monedas += 2
+		agregar_log("🪙 Encontraste un par de monedas tiradas (+2 Monedas).")
+		
+	elif dado_d20 >= 17 and dado_d20 <= 19:
+		# Bueno: Objeto (del 17 al 19)
+		agregar_log("✨ Encuentro Bueno. Encontraste un equipamiento.")
+		generar_loot_objeto()
+		
+	elif dado_d20 == 20:
+		# Crítico: Cofre
+		monedas += 5
+		agregar_log("🌟 ¡CRÍTICO (20)! ¡Encontraste un Cofre valioso! (+5 Monedas)")
+		generar_loot_objeto()
 
-func evento_curacion():
-	var curacion = 5
-	hp_jugador = min(hp_max_jugador, hp_jugador + curacion)
 	actualizar_interfaz()
-	agregar_log("⛲ Encontraste una fuente de agua clara. Te curas " + str(curacion) + " de HP.")
+
+# === SISTEMA DE LOOT D100 ===
+func generar_loot_objeto():
+	var dado_d100 = randi_range(1, 100)
+	agregar_log("🎲 Tirada de Calidad de Objeto (d100): " + str(dado_d100))
+	
+	if dado_d100 <= 50:
+		aplicar_mejora_objeto("Madera (Calidad 1)", 1, 1)
+	elif dado_d100 <= 75:
+		aplicar_mejora_objeto("Bronce (Calidad 2)", 3, 3)
+	elif dado_d100 <= 85:
+		aplicar_mejora_objeto("Acero (Calidad 3)", 4, 4)
+	elif dado_d100 <= 94:
+		aplicar_mejora_objeto("Acero Doble (Calidad 4)", 5, 5)
+	else:
+		aplicar_mejora_objeto("Obsidiana (Calidad 5)", 10, 10)
+
+func aplicar_mejora_objeto(nombre_calidad: String, bonif_hp: int, bonif_atq: int):
+	hp_max_jugador += bonif_hp
+	hp_jugador += bonif_hp
+	ataque_base_jugador += bonif_atq
+	agregar_log("📦 ¡Conseguiste equipo de " + nombre_calidad + "! (+" + str(bonif_hp) + " HP Máx / +" + str(bonif_atq) + " ATQ Base)")
 
 func iniciar_combate():
 	en_combate = true
 	hp_enemigo = 20
 	hp_max_enemigo = 20
 	actualizar_interfaz()
-	agregar_log("⚠️ ¡Un Goblin salvaje te bloquea el paso! (HP: 20)")
+	agregar_log("⚔️ ¡Enemigo a la vista! HP: 20")
 	boton_atacar.disabled = false
 	boton_siguiente.disabled = true
 
-# SISTEMA DE COMBATE POR TURNOS CON DADOS (1 + d4)
+# === COMBATE POR TURNOS CON DADOS ===
 func _on_atacar_pressed():
 	if not en_combate:
 		return
 		
-	agregar_log("-----------------------------------------")
 	agregar_log("⚔️ TURNO DEL JUGADOR:")
-	
-	# 1. Tirada de precisión (d6)
 	var dado_precision = randi_range(1, 6)
 	
 	if dado_precision == 1:
 		hp_jugador = max(0, hp_jugador - 3)
-		agregar_log("💀 ¡PIFIA! Sacaste un 1 en el dado. Te tropezaste y perdiste 3 de HP.")
+		agregar_log("💀 ¡PIFIA! Sacaste 1. Te tropezaste y perdiste 3 HP.")
 	elif dado_precision in [2, 3]:
-		agregar_log("🛡️ Fallaste el ataque (Sacaste un " + str(dado_precision) + ". Necesitás > 3 para acertar).")
+		agregar_log("🛡️ Fallaste el ataque (Sacaste " + str(dado_precision) + ").")
 	else:
-		# Acierto (4, 5 o 6)
 		var dado_d4 = randi_range(1, 4)
 		var dano_calculado = ataque_base_jugador + dado_d4
 		
 		if dado_precision == 6:
 			var dano_critico = dano_calculado * 2
 			hp_enemigo = max(0, hp_enemigo - dano_critico)
-			agregar_log("💥 ¡GOLPE CRÍTICO (6)! [1 + d4(salio " + str(dado_d4) + ")] x 2 = " + str(dano_critico) + " de daño al enemigo.")
+			agregar_log("💥 ¡CRÍTICO (6)! [ATQ " + str(ataque_base_jugador) + " + d4(" + str(dado_d4) + ")] x 2 = " + str(dano_critico) + " de daño.")
 		else:
 			hp_enemigo = max(0, hp_enemigo - dano_calculado)
-			agregar_log("🎯 ¡Acierto! [1 + d4(salio " + str(dado_d4) + ")] = " + str(dano_calculado) + " de daño al enemigo.")
+			agregar_log("🎯 ¡Acierto! [ATQ " + str(ataque_base_jugador) + " + d4(" + str(dado_d4) + ")] = " + str(dano_calculado) + " de daño.")
 
 	actualizar_interfaz()
 	
-	# Verificar si el enemigo murió
 	if hp_enemigo <= 0:
 		en_combate = false
-		agregar_log("🎉 ¡Derrotaste al Goblin!")
+		agregar_log("🎉 ¡Derrotaste al enemigo!")
+		agregar_log("🎁 El enemigo soltó un objeto al caer:")
+		generar_loot_objeto()
 		boton_atacar.disabled = true
 		boton_siguiente.disabled = false
+		actualizar_interfaz()
 		return
 
-	# 2. Turno del Enemigo
 	turno_enemigo()
 
 func turno_enemigo():
@@ -138,9 +170,9 @@ func turno_enemigo():
 	
 	if dado_precision == 1:
 		hp_enemigo = max(0, hp_enemigo - 3)
-		agregar_log("🤡 ¡PIFIA DEL ENEMIGO! Sacó un 1 y se autodañó por 3 de HP.")
+		agregar_log("🤡 ¡PIFIA ENEMIGA! Sacó 1 y se autodañó por 3 HP.")
 	elif dado_precision in [2, 3]:
-		agregar_log("💨 El enemigo atacó pero esquivaste (Sacó " + str(dado_precision) + ").")
+		agregar_log("💨 Esquivaste el ataque enemigo (Sacó " + str(dado_precision) + ").")
 	else:
 		var dado_d4 = randi_range(1, 4)
 		var dano_calculado = ataque_base_enemigo + dado_d4
@@ -148,35 +180,21 @@ func turno_enemigo():
 		if dado_precision == 6:
 			var dano_critico = dano_calculado * 2
 			hp_jugador = max(0, hp_jugador - dano_critico)
-			agregar_log("🔥 ¡CRÍTICO DEL ENEMIGO! [1 + d4(salio " + str(dado_d4) + ")] x 2 = " + str(dano_critico) + " de daño.")
+			agregar_log("🔥 ¡CRÍTICO ENEMIGO! Impacto por " + str(dano_critico) + " de daño.")
 		else:
 			hp_jugador = max(0, hp_jugador - dano_calculado)
-			agregar_log("🥊 El enemigo te acertó: [1 + d4(salio " + str(dado_d4) + ")] = " + str(dano_calculado) + " de daño.")
+			agregar_log("🥊 El enemigo golpeó por " + str(dano_calculado) + " de daño.")
 
 	actualizar_interfaz()
 	
 	if hp_jugador <= 0:
 		en_combate = false
-		agregar_log("💀 Has sido derrotado... Fin de la exploración por hoy.")
+		agregar_log("💀 Has sido derrotado...")
 		boton_atacar.disabled = true
 		boton_siguiente.disabled = true
 
 func _on_boton_objeto_pressed():
-	if inventario_pocion == null:
-		agregar_log("❌ No tenés ningún objeto para usar.")
-		return
-
-	# Curar al personaje
-	hp_jugador = min(hp_max_jugador, hp_jugador + inventario_pocion.curacion)
-	agregar_log("🧪 Usaste " + inventario_pocion.nombre + " y recuperaste " + str(inventario_pocion.curacion) + " de HP!")
-	
-	# Consumir el objeto
-	inventario_pocion = null
-	actualizar_interfaz()
-
-	# Si estás en combate, usar objeto consume turno y responde el enemigo
-	if en_combate:
-		turno_enemigo()
+	agregar_log("ℹ️ Tus objetos equipados aumentan tus stats máximos automáticamente.")
 
 func _on_boton_comenzar_dia_pressed():
 	var input_peso = $PanelCheckIn/InputPeso
@@ -190,42 +208,36 @@ func _on_boton_comenzar_dia_pressed():
 	var pasos_num = int(input_pasos.text) if input_pasos.text.is_valid_int() else 0
 	
 	agregar_log("=== ☀️ INICIO DE JORNADA ===")
-	
 	if peso_texto != "":
 		agregar_log("⚖️ Peso registrado: " + peso_texto + " kg")
 	
-	# Recompensas de Stats Reales:
 	if check_nutricion.button_pressed:
 		hp_jugador = min(hp_max_jugador, hp_jugador + 5)
-		agregar_log("🥗 Nutrición en Rango (+5 HP Curado)")
+		agregar_log("🥗 Nutrición (+5 HP Curado)")
 		
 	if check_gimnasio.button_pressed:
 		ataque_base_jugador += 1
-		agregar_log("🏋️ Gimnasio completado (+1 de Daño Base permanente)")
+		agregar_log("🏋️ Gimnasio (+1 ATQ Base permanente)")
 		
 	if check_estudio.button_pressed:
-		agregar_log("📚 Estudio completado (+1 Inteligencia)")
+		agregar_log("📚 Estudio (+1 Inteligencia)")
 		
 	if check_nofap.button_pressed:
-		agregar_log("🧠 Perseverancia mantenida (+1 Claridad)")
+		agregar_log("🧠 Perseverancia (+1 Claridad)")
 
-	# Pasos -> Puntos de Exploración
-	puntos_exploracion = 1 # 1 punto base diario
+	puntos_exploracion = 1
 	var puntos_extra = pasos_num / 5000
 	puntos_exploracion += puntos_extra
 	
 	if puntos_extra > 0:
-		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (¡+" + str(puntos_extra) + " Puntos Extra!)")
+		agregar_log("👟 Pasos: " + str(pasos_num) + " (¡+" + str(puntos_extra) + " Puntos Extra!)")
 	else:
-		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (+1 Punto base por iniciar el día)")
+		agregar_log("👟 Pasos: " + str(pasos_num) + " (+1 Punto base)")
 		
-	agregar_log("MAPA: Puntos disponibles: " + str(puntos_exploracion))
 	agregar_log("=============================\n")
 	
-	# Guardar la jornada en el archivo local
 	guardar_jornada(peso_texto, pasos_num, check_nutricion.button_pressed, check_gimnasio.button_pressed, check_estudio.button_pressed, check_nofap.button_pressed)
 
-	# Ocultamos el Check-In y revelamos la interfaz de juego
 	$PanelCheckIn.visible = false
 	$HBoxContainer.visible = true
 	$LabelJugador.visible = true
@@ -234,7 +246,6 @@ func _on_boton_comenzar_dia_pressed():
 
 func guardar_jornada(peso: String, pasos: int, nutricion: bool, gym: bool, estudio: bool, nofap: bool):
 	var fecha_hoy = Time.get_date_string_from_system()
-	
 	var datos_jornada = {
 		"fecha": fecha_hoy,
 		"peso": peso,
@@ -253,12 +264,11 @@ func guardar_jornada(peso: String, pasos: int, nutricion: bool, gym: bool, estud
 		var json_texto = JSON.stringify(historial, "\t")
 		archivo.store_string(json_texto)
 		archivo.close()
-		agregar_log("💾 Jornada guardada en el historial.")
+		agregar_log("💾 Jornada guardada en historial.")
 
 func cargar_historial() -> Array:
 	if not FileAccess.file_exists("user://historial_habitos.json"):
 		return []
-		
 	var archivo = FileAccess.open("user://historial_habitos.json", FileAccess.READ)
 	if archivo:
 		var texto = archivo.get_as_text()
@@ -277,9 +287,8 @@ func _on_boton_cerrar_historial_pressed():
 
 func mostrar_metricas_historial():
 	var historial = cargar_historial()
-	
 	if historial.size() == 0:
-		$PanelHistorial/TextoHistorial.text = "[center]⚠️ No hay registros guardados todavía. ¡Completá tu primer día en el Check-in![/center]"
+		$PanelHistorial/TextoHistorial.text = "[center]⚠️ No hay registros guardados todavía.[/center]"
 		return
 		
 	var total_dias = historial.size()
