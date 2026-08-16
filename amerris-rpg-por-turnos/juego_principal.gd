@@ -124,3 +124,58 @@ func _on_boton_objeto_pressed():
 			boton_siguiente.disabled = true
 		
 		actualizar_interfaz()
+
+
+func _on_boton_comenzar_dia_pressed():
+	# 1. Obtener referencias a los nodos del Check-in
+	var input_peso = $PanelCheckIn/InputPeso
+	var check_nutricion = $PanelCheckIn/CheckNutricion
+	var check_gimnasio = $PanelCheckIn/CheckGimnasio
+	var check_estudio = $PanelCheckIn/CheckEstudio
+	var check_nofap = $PanelCheckIn/CheckNoFap
+	var input_pasos = $PanelCheckIn/InputPasos
+
+	# 2. Leer valores
+	var peso_texto = input_peso.text
+	var pasos_num = int(input_pasos.text) if input_pasos.text.is_valid_int() else 0
+	
+	agregar_log("=== ☀️ INICIO DE JORNADA ===")
+	
+	if peso_texto != "":
+		agregar_log("⚖️ Peso registrado: " + peso_texto + " kg")
+	
+	# 3. Procesar Hábitos y Otorgar Recompensas
+	var habitos_cumplidos = 0
+	
+	if check_nutricion.button_pressed:
+		habitos_cumplidos += 1
+		agregar_log("🥗 Nutrición en Rango (+1 Escudo)")
+		
+	if check_gimnasio.button_pressed:
+		habitos_cumplidos += 1
+		agregar_log("🏋️ Gimnasio completado (+1 Fuerza Temporal)")
+		
+	if check_estudio.button_pressed:
+		habitos_cumplidos += 1
+		agregar_log("📚 Estudio completado (+1 Inteligencia)")
+		
+	if check_nofap.button_pressed:
+		habitos_cumplidos += 1
+		agregar_log("🧠 Perseverancia mantenida (+1 Claridad)")
+
+	# 4. Procesar Pasos
+	if pasos_num >= 5000:
+		var turnos_extra = pasos_num / 5000
+		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (+ " + str(turnos_extra) + " turnos de exploración)")
+	elif pasos_num > 0:
+		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (Faltaron para completar 5k)")
+
+	agregar_log("=============================\n")
+	
+	# 5. Ocultar el panel de Check-in para habilitar la vista de juego
+	$PanelCheckIn.visible = false
+	actualizar_interfaz()
+
+
+func _on_boton_comenzar_día_pressed() -> void:
+	pass # Replace with function body.
