@@ -9,13 +9,15 @@ extends Node2D
 @onready var boton_siguiente: Button = $HBoxContainer/BotonSiguiente
 @onready var inventario_pocion: ItemData = preload("res://pocion.tres")
 
-# Variables de estado
-var hp_jugador: int = 100
-var ataque_jugador: int = 15
+# Variables de estado (NUEVO SISTEMA D&D)
+var hp_jugador: int = 20
+var hp_max_jugador: int = 20
+var ataque_base_jugador: int = 1 # Daño fijo base
 var puntos_exploracion: int = 0
 
-var hp_enemigo: int = 0
-var ataque_enemigo: int = 8
+var hp_enemigo: int = 20
+var hp_max_enemigo: int = 20
+var ataque_base_enemigo: int = 1
 
 var en_combate: bool = false
 
@@ -40,15 +42,15 @@ func _ready():
 func agregar_log(mensaje: String):
 	log_texto.append_text(mensaje + "\n")
 	
-	# Si pasa de 10 líneas, limpia el log para que no se acumule tanto
-	if log_texto.get_line_count() > 10:
+	# Si pasa de 12 líneas, limpia el log para que no se acumule tanto
+	if log_texto.get_line_count() > 12:
 		log_texto.clear()
 		log_texto.append_text(mensaje + "\n")
 
 func actualizar_interfaz():
-	label_jugador.text = "HP: " + str(hp_jugador) + " | ATQ: " + str(ataque_jugador) + " | PTS: " + str(puntos_exploracion)
+	label_jugador.text = "HP: " + str(hp_jugador) + "/" + str(hp_max_jugador) + " | PTS: " + str(puntos_exploracion)
 	if en_combate:
-		label_enemigo.text = "Enemigo HP: " + str(hp_enemigo)
+		label_enemigo.text = "Enemigo HP: " + str(hp_enemigo) + "/" + str(hp_max_enemigo)
 	else:
 		label_enemigo.text = "Enemigo: Ninguno"
 
@@ -74,76 +76,107 @@ func _on_siguiente_pressed():
 		evento_curacion()
 
 func evento_curacion():
-	var curacion = 20
-	hp_jugador += curacion
+	var curacion = 5
+	hp_jugador = min(hp_max_jugador, hp_jugador + curacion)
 	actualizar_interfaz()
-	agregar_log("Encontraste una fuente de agua clara. Te curas " + str(curacion) + " de HP.")
+	agregar_log("⛲ Encontraste una fuente de agua clara. Te curas " + str(curacion) + " de HP.")
 
 func iniciar_combate():
 	en_combate = true
-	hp_enemigo = 40
+	hp_enemigo = 20
+	hp_max_enemigo = 20
 	actualizar_interfaz()
-	agregar_log("⚠️ ¡Un Goblin salvaje te bloquea el paso!")
+	agregar_log("⚠️ ¡Un Goblin salvaje te bloquea el paso! (HP: 20)")
 	boton_atacar.disabled = false
 	boton_siguiente.disabled = true
 
-# SISTEMA DE COMBATE POR TURNOS
+# SISTEMA DE COMBATE POR TURNOS CON DADOS (1 + d4)
 func _on_atacar_pressed():
 	if not en_combate:
 		return
 		
-	# Turno del Jugador
-	hp_enemigo -= ataque_jugador
-	agregar_log("Atacas al Goblin por " + str(ataque_jugador) + " de daño.")
+	agregar_log("-----------------------------------------")
+	agregar_log("⚔️ TURNO DEL JUGADOR:")
 	
+	# 1. Tirada de precisión (d6)
+	var dado_precision = randi_range(1, 6)
+	
+	if dado_precision == 1:
+		hp_jugador = max(0, hp_jugador - 3)
+		agregar_log("💀 ¡PIFIA! Sacaste un 1 en el dado. Te tropezaste y perdiste 3 de HP.")
+	elif dado_precision in [2, 3]:
+		agregar_log("🛡️ Fallaste el ataque (Sacaste un " + str(dado_precision) + ". Necesitás > 3 para acertar).")
+	else:
+		# Acierto (4, 5 o 6)
+		var dado_d4 = randi_range(1, 4)
+		var dano_calculado = ataque_base_jugador + dado_d4
+		
+		if dado_precision == 6:
+			var dano_critico = dano_calculado * 2
+			hp_enemigo = max(0, hp_enemigo - dano_critico)
+			agregar_log("💥 ¡GOLPE CRÍTICO (6)! [1 + d4(salio " + str(dado_d4) + ")] x 2 = " + str(dano_critico) + " de daño al enemigo.")
+		else:
+			hp_enemigo = max(0, hp_enemigo - dano_calculado)
+			agregar_log("🎯 ¡Acierto! [1 + d4(salio " + str(dado_d4) + ")] = " + str(dano_calculado) + " de daño al enemigo.")
+
+	actualizar_interfaz()
+	
+	# Verificar si el enemigo murió
 	if hp_enemigo <= 0:
-		hp_enemigo = 0
-		actualizar_interfaz()
-		agregar_log("🎉 ¡Derrotaste al Goblin!")
 		en_combate = false
+		agregar_log("🎉 ¡Derrotaste al Goblin!")
 		boton_atacar.disabled = true
 		boton_siguiente.disabled = false
 		return
 
-	# Turno del Enemigo
-	hp_jugador -= ataque_enemigo
-	agregar_log("El Goblin te ataca e inflige " + str(ataque_enemigo) + " de daño.")
+	# 2. Turno del Enemigo
+	turno_enemigo()
+
+func turno_enemigo():
+	agregar_log("😈 TURNO DEL ENEMIGO:")
+	var dado_precision = randi_range(1, 6)
+	
+	if dado_precision == 1:
+		hp_enemigo = max(0, hp_enemigo - 3)
+		agregar_log("🤡 ¡PIFIA DEL ENEMIGO! Sacó un 1 y se autodañó por 3 de HP.")
+	elif dado_precision in [2, 3]:
+		agregar_log("💨 El enemigo atacó pero esquivaste (Sacó " + str(dado_precision) + ").")
+	else:
+		var dado_d4 = randi_range(1, 4)
+		var dano_calculado = ataque_base_enemigo + dado_d4
+		
+		if dado_precision == 6:
+			var dano_critico = dano_calculado * 2
+			hp_jugador = max(0, hp_jugador - dano_critico)
+			agregar_log("🔥 ¡CRÍTICO DEL ENEMIGO! [1 + d4(salio " + str(dado_d4) + ")] x 2 = " + str(dano_critico) + " de daño.")
+		else:
+			hp_jugador = max(0, hp_jugador - dano_calculado)
+			agregar_log("🥊 El enemigo te acertó: [1 + d4(salio " + str(dado_d4) + ")] = " + str(dano_calculado) + " de daño.")
+
+	actualizar_interfaz()
 	
 	if hp_jugador <= 0:
-		hp_jugador = 0
-		agregar_log("💀 Has muerto... Fin del juego.")
+		en_combate = false
+		agregar_log("💀 Has sido derrotado... Fin de la exploración por hoy.")
 		boton_atacar.disabled = true
 		boton_siguiente.disabled = true
-		
-	actualizar_interfaz()
-
 
 func _on_boton_objeto_pressed():
 	if inventario_pocion == null:
 		agregar_log("❌ No tenés ningún objeto para usar.")
 		return
 
-	# Curar al personaje (máximo 100 de HP)
-	hp_jugador = min(100, hp_jugador + inventario_pocion.curacion)
+	# Curar al personaje
+	hp_jugador = min(hp_max_jugador, hp_jugador + inventario_pocion.curacion)
 	agregar_log("🧪 Usaste " + inventario_pocion.nombre + " y recuperaste " + str(inventario_pocion.curacion) + " de HP!")
 	
 	# Consumir el objeto
 	inventario_pocion = null
 	actualizar_interfaz()
 
-	# Si estás en combate, usar un objeto te consume el turno y el Goblin ataca
+	# Si estás en combate, usar objeto consume turno y responde el enemigo
 	if en_combate:
-		hp_jugador -= ataque_enemigo
-		agregar_log("El Goblin aprovecha tu descuido y te ataca infligiendo " + str(ataque_enemigo) + " de daño.")
-		
-		if hp_jugador <= 0:
-			hp_jugador = 0
-			agregar_log("💀 Has muerto... Fin del juego.")
-			boton_atacar.disabled = true
-			boton_siguiente.disabled = true
-		
-		actualizar_interfaz()
-
+		turno_enemigo()
 
 func _on_boton_comenzar_dia_pressed():
 	var input_peso = $PanelCheckIn/InputPeso
@@ -163,12 +196,12 @@ func _on_boton_comenzar_dia_pressed():
 	
 	# Recompensas de Stats Reales:
 	if check_nutricion.button_pressed:
-		hp_jugador = min(100, hp_jugador + 10) # Te cura/defiende 10 de vida
-		agregar_log("🥗 Nutrición en Rango (+10 HP Curado)")
+		hp_jugador = min(hp_max_jugador, hp_jugador + 5)
+		agregar_log("🥗 Nutrición en Rango (+5 HP Curado)")
 		
 	if check_gimnasio.button_pressed:
-		ataque_jugador += 2 # Te sube el daño base de ataque
-		agregar_log("🏋️ Gimnasio completado (+2 de Daño de Ataque)")
+		ataque_base_jugador += 1
+		agregar_log("🏋️ Gimnasio completado (+1 de Daño Base permanente)")
 		
 	if check_estudio.button_pressed:
 		agregar_log("📚 Estudio completado (+1 Inteligencia)")
@@ -176,7 +209,7 @@ func _on_boton_comenzar_dia_pressed():
 	if check_nofap.button_pressed:
 		agregar_log("🧠 Perseverancia mantenida (+1 Claridad)")
 
-# Pasos -> Puntos de Exploración
+	# Pasos -> Puntos de Exploración
 	puntos_exploracion = 1 # 1 punto base diario
 	var puntos_extra = pasos_num / 5000
 	puntos_exploracion += puntos_extra
@@ -186,25 +219,21 @@ func _on_boton_comenzar_dia_pressed():
 	else:
 		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (+1 Punto base por iniciar el día)")
 		
-	agregar_log("🗺️ Puntos de Exploración disponibles: " + str(puntos_exploracion))
-	
+	agregar_log("MAPA: Puntos disponibles: " + str(puntos_exploracion))
 	agregar_log("=============================\n")
 	
-# Guardar la jornada en el archivo local
+	# Guardar la jornada en el archivo local
 	guardar_jornada(peso_texto, pasos_num, check_nutricion.button_pressed, check_gimnasio.button_pressed, check_estudio.button_pressed, check_nofap.button_pressed)
 
-	# Ocultar panel y refrescar interfaz
-	$PanelCheckIn.visible = false
-	actualizar_interfaz()
-
-# Ocultamos el Check-In y revelamos la interfaz de juego
+	# Ocultamos el Check-In y revelamos la interfaz de juego
 	$PanelCheckIn.visible = false
 	$HBoxContainer.visible = true
 	$LabelJugador.visible = true
 	$LabelEnemigo.visible = true
+	actualizar_interfaz()
 
 func guardar_jornada(peso: String, pasos: int, nutricion: bool, gym: bool, estudio: bool, nofap: bool):
-	var fecha_hoy = Time.get_date_string_from_system() # Formato AAAA-MM-DD
+	var fecha_hoy = Time.get_date_string_from_system()
 	
 	var datos_jornada = {
 		"fecha": fecha_hoy,
@@ -216,17 +245,15 @@ func guardar_jornada(peso: String, pasos: int, nutricion: bool, gym: bool, estud
 		"nofap": nofap
 	}
 	
-	# Cargar historial existente
 	var historial = cargar_historial()
 	historial.append(datos_jornada)
 	
-	# Guardar en archivo JSON local en user://
 	var archivo = FileAccess.open("user://historial_habitos.json", FileAccess.WRITE)
 	if archivo:
 		var json_texto = JSON.stringify(historial, "\t")
 		archivo.store_string(json_texto)
 		archivo.close()
-		agregar_log("💾 Jornada guardada exitosamente en el historial.")
+		agregar_log("💾 Jornada guardada en el historial.")
 
 func cargar_historial() -> Array:
 	if not FileAccess.file_exists("user://historial_habitos.json"):
@@ -240,7 +267,6 @@ func cargar_historial() -> Array:
 		if json.parse(texto) == OK:
 			return json.get_data()
 	return []
-
 
 func _on_boton_historial_pressed():
 	$PanelHistorial.visible = true
@@ -256,18 +282,15 @@ func mostrar_metricas_historial():
 		$PanelHistorial/TextoHistorial.text = "[center]⚠️ No hay registros guardados todavía. ¡Completá tu primer día en el Check-in![/center]"
 		return
 		
-	# 1. Cálculo de métricas
 	var total_dias = historial.size()
 	var racha_gimnasio = 0
 	
-	# Contar racha de gimnasio de los últimos días
 	for i in range(historial.size() - 1, -1, -1):
 		if historial[i].get("gimnasio", false):
 			racha_gimnasio += 1
 		else:
-			break # Se corta la racha si un día no se hizo
+			break
 			
-	# Diferencia de peso (Primer registro vs ÚLTIMO registro)
 	var primer_peso = float(historial[0].get("peso", "0"))
 	var ultimo_peso = float(historial[historial.size() - 1].get("peso", "0"))
 	var diff_peso = ultimo_peso - primer_peso
@@ -277,7 +300,6 @@ func mostrar_metricas_historial():
 		var signo = "+" if diff_peso > 0 else ""
 		texto_peso += " (" + signo + str(snapped(diff_peso, 0.1)) + " kg)"
 
-	# 2. Armar el reporte visual con formato BBCode
 	var reporte = "[b]📊 DASHBOARD DE PROGRESO[/b]\n"
 	reporte += "---------------------------------------------------------\n"
 	reporte += "📅 Días Registrados: " + str(total_dias) + " | 🔥 Racha Gimnasio: " + str(racha_gimnasio) + " días\n"
@@ -285,8 +307,7 @@ func mostrar_metricas_historial():
 	reporte += "---------------------------------------------------------\n"
 	reporte += "[b]📜 ÚLTIMOS REGISTROS:[/b]\n\n"
 	
-	# Recorrer historial (del más reciente al más antiguo)
-	var limite = max(0, historial.size() - 5) # Mostrar últimos 5 días
+	var limite = max(0, historial.size() - 5)
 	for i in range(historial.size() - 1, limite - 1, -1):
 		var reg = historial[i]
 		var fecha = reg.get("fecha", "Sin fecha")
