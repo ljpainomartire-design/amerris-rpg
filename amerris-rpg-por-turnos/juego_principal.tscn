@@ -63,6 +63,7 @@ offset_bottom = 342.0
 
 [node name="InputPeso" type="LineEdit" parent="PanelCheckIn" unique_id=1947990650]
 layout_mode = 2
+placeholder_text = "Poné tu peso del día de hoy (ej: 90.5)"
 
 [node name="CheckNutricion" type="CheckBox" parent="PanelCheckIn" unique_id=1861225732]
 layout_mode = 2
@@ -82,10 +83,11 @@ text = "Perseverancia"
 
 [node name="InputPasos" type="LineEdit" parent="PanelCheckIn" unique_id=5129827]
 layout_mode = 2
+placeholder_text = "¿Cuánto caminaste hoy? (ej: 5000)"
 
-[node name="BotonComenzarDía" type="Button" parent="PanelCheckIn" unique_id=348891265]
+[node name="BotonComenzarDia" type="Button" parent="PanelCheckIn" unique_id=348891265]
 layout_mode = 2
 text = "Comenzar Jornada"
 
 [connection signal="pressed" from="HBoxContainer/BotonObjeto" to="." method="_on_boton_objeto_pressed"]
-[connection signal="pressed" from="PanelCheckIn/BotonComenzarDía" to="." method="_on_boton_comenzar_día_pressed"]
+[connection signal="pressed" from="PanelCheckIn/BotonComenzarDia" to="." method="_on_boton_comenzar_dia_pressed"]
