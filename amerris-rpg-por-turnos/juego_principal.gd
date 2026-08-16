@@ -24,8 +24,17 @@ func _ready():
 	boton_atacar.pressed.connect(_on_atacar_pressed)
 	boton_siguiente.pressed.connect(_on_siguiente_pressed)
 	
+	# Ocultamos la interfaz del juego al inicio
+	$HBoxContainer.visible = false
+	$LabelJugador.visible = false
+	$LabelEnemigo.visible = false
+	$PanelHistorial.visible = false
+	
+	# Mostramos únicamente el Check-In para ingresar datos
+	$PanelCheckIn.visible = true
+	
 	actualizar_interfaz()
-	agregar_log("¡Bienvenido a la aventura! Presiona 'Avanzar Evento' para comenzar.")
+	agregar_log("👋 ¡Bienvenido! Completá tu Check-In diario para iniciar la jornada.")
 	boton_atacar.disabled = true
 
 func agregar_log(mensaje: String):
@@ -187,6 +196,12 @@ func _on_boton_comenzar_dia_pressed():
 	# Ocultar panel y refrescar interfaz
 	$PanelCheckIn.visible = false
 	actualizar_interfaz()
+
+# Ocultamos el Check-In y revelamos la interfaz de juego
+	$PanelCheckIn.visible = false
+	$HBoxContainer.visible = true
+	$LabelJugador.visible = true
+	$LabelEnemigo.visible = true
 
 func guardar_jornada(peso: String, pasos: int, nutricion: bool, gym: bool, estudio: bool, nofap: bool):
 	var fecha_hoy = Time.get_date_string_from_system() # Formato AAAA-MM-DD
