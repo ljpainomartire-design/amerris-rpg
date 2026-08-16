@@ -12,6 +12,7 @@ extends Node2D
 # Variables de estado
 var hp_jugador: int = 100
 var ataque_jugador: int = 15
+var puntos_exploracion: int = 0
 
 var hp_enemigo: int = 0
 var ataque_enemigo: int = 8
@@ -36,7 +37,7 @@ func agregar_log(mensaje: String):
 		log_texto.append_text(mensaje + "\n")
 
 func actualizar_interfaz():
-	label_jugador.text = "Jugador HP: " + str(hp_jugador)
+	label_jugador.text = "HP: " + str(hp_jugador) + " | ATQ: " + str(ataque_jugador) + " | PTS: " + str(puntos_exploracion)
 	if en_combate:
 		label_enemigo.text = "Enemigo HP: " + str(hp_enemigo)
 	else:
@@ -47,6 +48,15 @@ func _on_siguiente_pressed():
 	if en_combate:
 		return
 		
+	# Verificar si quedan puntos de exploración
+	if puntos_exploracion <= 0:
+		agregar_log("⚠️ ¡No te quedan Puntos de Exploración por hoy! Salí a caminar o esperá a mañana.")
+		return
+		
+	# Descontar 1 punto de exploración
+	puntos_exploracion -= 1
+	agregar_log("🗺️ Explorando... (Puntos restantes: " + str(puntos_exploracion) + ")")
+
 	# Generamos un evento aleatorio
 	var dado = randi_range(1, 2)
 	if dado == 1:
@@ -157,15 +167,61 @@ func _on_boton_comenzar_dia_pressed():
 	if check_nofap.button_pressed:
 		agregar_log("🧠 Perseverancia mantenida (+1 Claridad)")
 
-	# Pasos -> Turnos
-	if pasos_num >= 5000:
-		var turnos_extra = pasos_num / 5000
-		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (+ " + str(turnos_extra) + " turnos de exploración)")
-	elif pasos_num > 0:
-		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (Llegá a 5k para obtener turnos extra)")
-
+# Pasos -> Puntos de Exploración
+	puntos_exploracion = 1 # 1 punto base diario
+	var puntos_extra = pasos_num / 5000
+	puntos_exploracion += puntos_extra
+	
+	if puntos_extra > 0:
+		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (¡+" + str(puntos_extra) + " Puntos Extra!)")
+	else:
+		agregar_log("👟 Pasos de hoy: " + str(pasos_num) + " (+1 Punto base por iniciar el día)")
+		
+	agregar_log("🗺️ Puntos de Exploración disponibles: " + str(puntos_exploracion))
+	
 	agregar_log("=============================\n")
 	
-	# Ocultar panel y refrescar la interfaz superior con los nuevos stats
+# Guardar la jornada en el archivo local
+	guardar_jornada(peso_texto, pasos_num, check_nutricion.button_pressed, check_gimnasio.button_pressed, check_estudio.button_pressed, check_nofap.button_pressed)
+
+	# Ocultar panel y refrescar interfaz
 	$PanelCheckIn.visible = false
 	actualizar_interfaz()
+
+func guardar_jornada(peso: String, pasos: int, nutricion: bool, gym: bool, estudio: bool, nofap: bool):
+	var fecha_hoy = Time.get_date_string_from_system() # Formato AAAA-MM-DD
+	
+	var datos_jornada = {
+		"fecha": fecha_hoy,
+		"peso": peso,
+		"pasos": pasos,
+		"nutricion": nutricion,
+		"gimnasio": gym,
+		"estudio": estudio,
+		"nofap": nofap
+	}
+	
+	# Cargar historial existente
+	var historial = cargar_historial()
+	historial.append(datos_jornada)
+	
+	# Guardar en archivo JSON local en user://
+	var archivo = FileAccess.open("user://historial_habitos.json", FileAccess.WRITE)
+	if archivo:
+		var json_texto = JSON.stringify(historial, "\t")
+		archivo.store_string(json_texto)
+		archivo.close()
+		agregar_log("💾 Jornada guardada exitosamente en el historial.")
+
+func cargar_historial() -> Array:
+	if not FileAccess.file_exists("user://historial_habitos.json"):
+		return []
+		
+	var archivo = FileAccess.open("user://historial_habitos.json", FileAccess.READ)
+	if archivo:
+		var texto = archivo.get_as_text()
+		archivo.close()
+		var json = JSON.new()
+		if json.parse(texto) == OK:
+			return json.get_data()
+	return []

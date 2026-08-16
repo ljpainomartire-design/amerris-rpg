@@ -40,18 +40,18 @@ theme_override_font_sizes/font_size = 36
 text = "Avanzar Evento"
 
 [node name="LabelJugador" type="Label" parent="." unique_id=1878020121]
-offset_left = 433.0
-offset_top = 5.0
-offset_right = 782.0
-offset_bottom = 55.0
+offset_left = 684.0
+offset_top = 11.0
+offset_right = 1033.0
+offset_bottom = 61.0
 theme_override_font_sizes/font_size = 36
 text = "Jugador HP: 100/100"
 
 [node name="LabelEnemigo" type="Label" parent="." unique_id=1215517914]
-offset_left = 819.0
-offset_top = 3.0
-offset_right = 1143.0
-offset_bottom = 53.0
+offset_left = 829.0
+offset_top = 180.0
+offset_right = 1153.0
+offset_bottom = 230.0
 theme_override_font_sizes/font_size = 36
 text = "Enemigo HP: 50/50"
 
